@@ -1,12 +1,13 @@
 import tornado.web
-import tornado.ioloop
+from  tornado.ioloop import IOLoop
 from tornado import httpserver, gen
 from tornado.options import define, options
 import tornado.escape
 import datetime
-import motor
+from motor import MotorClient
 from bson.objectid import ObjectId
 from parse import parse_message
+from tcp_server import TCPSocketHandler
 
 # Capped collection, es una coleccion con numero maximo de
 # elementos, nos permite hacer cursores "tailables", lo
@@ -15,24 +16,39 @@ options.define("database", default="noobe", help="Base de datos de mongoDB")
 options.define("capped-coll", default="cappedData", help="'Capped colection' a utilizar")
 options.define("store-coll", default="data", help="Coleccion donde almacenar la data")
 
-options.define("port", default=9090, help="run on the given port", type=int)
+options.define("port", default=8080, help="run HTTP server on the given port", type=int)
+options.define("tcp-port", default=8989, help="run TCP server on the given port", type=int)
+
+_db_object = MotorClient()[options["database"]]
 
 @gen.coroutine
-def insert_data(data_dict, db=options["database"],
-                data_coll=options["data-coll"],
-                capped_coll=options["store-coll"]):
+def insert_data(data_dict, db=_db_object,
+                store_coll=options["store-coll"],
+                capped_coll=options["capped-coll"]):
     """Inserta un objeto en la base de datos"""
     item = data_dict.copy()
     item["_id"] = ObjectId()
 
-    future_store = db[self.settings["store_coll"]].insert(item)
-    future_capped = db[self.settings["capped_coll"]].insert(item)
+    future_store = db[store_coll].insert(item)
+    future_capped = db[capped_coll].insert(item)
     yield [future_store, future_capped]
 
     if future_store.exception or future_capped.exception:
         return None
     else:
+        print("Dato insertado en la DB")
         return item["_id"]
+
+@gen.coroutine
+def get_data(query, limit, from_store=False,
+                  db=_db_object,
+                  store_coll=options["store-coll"],
+                  capped_coll=options["capped-coll"]):
+    if from_store:
+        return db[store_coll].find(query).limit(limit)
+    else:
+        return db[capped_coll].find(query, tailable=True).limit(limit)
+
 
 class DataHandler(tornado.web.RequestHandler):
     @gen.coroutine
@@ -48,18 +64,17 @@ class DataHandler(tornado.web.RequestHandler):
         collection a manera de coleccion de cache para
         poder hacer long polling con el parametro "tailable"
         """
+        historic = (self.get_argument("historic", None) is not None)
         after = self.get_argument("after", None)
         count = int(self.get_argument("count", 100) )
 
         query = {"_id":{"$gt": ObjectId(after)}} if after else {}
 
-        db = self.settings["db"]
-        capped_coll = self.settings["capped_coll"]
-        cursor = db[capped_coll].find(query, tailable=True).limit(count)
+        cursor = yield get_data(query, count, historic)
         data = []
-
+        last_id = ""
         # Debemos devolver aunque sea un dato
-        while len(data) == 0:
+        while (len(data) == 0 and cursor.alive):
             # Tomamos todo lo que podamos
             while (yield cursor.fetch_next):
                 item = cursor.next_object()
@@ -89,7 +104,6 @@ handlers = [
 settings = {
     "debug": True,
     "xsrf_cookies": False,
-    "db": motor.MotorClient()[options.database],
     "store_coll": options["store-coll"],
     "capped_coll": options["capped-coll"],
 }
@@ -98,9 +112,12 @@ web_app = tornado.web.Application(handlers, **settings)
 
 def deploy_server():
     http_server = httpserver.HTTPServer(web_app)
+    tcp_server = TCPSocketHandler(insert_data)
     http_server.listen(options.port)
-    print("Server Running in port: {:d}".format(options.port))
-    tornado.ioloop.IOLoop.instance().start()
+    tcp_server.listen(options["tcp-port"])
+    print("HTTP Server Running in port: {:d}".format(options.port))
+    print("TCP Server Running in port: {:d}".format(options["tcp-port"]))
+    IOLoop.current().start()
 
 if __name__ =="__main__":
     deploy_server()

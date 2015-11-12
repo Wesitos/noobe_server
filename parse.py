@@ -1,6 +1,10 @@
 from datetime import datetime
 
 def parse_message(message):
+    # A veces recibimos cadenas binarias
+    if isinstance(message, bytes):
+        message = message.decode("ascii")
+
     parts = message.split(",")
     version = int(parts.pop(0))
 
