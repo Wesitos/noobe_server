@@ -12,11 +12,23 @@ from bson.objectid import ObjectId
 # cual nos permite hacer long polling
 options.define("database", default="noobe", help="Base de datos de mongoDB")
 options.define("capped-coll", default="cappedData", help="'Capped colection' a utilizar")
-options.define("data-coll", default="data", help="Coleccion donde almacenar la data")
+options.define("store-coll", default="data", help="Coleccion donde almacenar la data")
 
 options.define("port", default=9090, help="run on the given port", type=int)
 
-class DataHandler(tornado.web.RequestHandler):    
+@gen.coroutine
+def insert_data(data_dict, db, data_coll, capped_coll):
+    """Inserta un objeto en la base de datos"""
+    item = data_dict.copy()
+    item["_id"] = ObjectId()
+
+    future_store = db[self.settings["store_coll"]].insert(item)
+    future_capped = db[self.settings["capped_coll"]].insert(item)
+
+    return [future_store, future_capped]
+
+
+class DataHandler(tornado.web.RequestHandler):
     @gen.coroutine
     def get(self):
         """ Devuelve data de la base de datos
