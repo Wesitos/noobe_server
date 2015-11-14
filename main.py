@@ -1,5 +1,5 @@
 import tornado.web
-from  tornado.ioloop import IOLoop
+from tornado.ioloop import IOLoop
 from tornado import httpserver, gen
 from tornado.options import define, options
 import tornado.escape
