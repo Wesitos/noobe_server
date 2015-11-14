@@ -19,10 +19,12 @@ def _parse_v2(msg_list):
     fechahora =            'yyyyMMddHHmmss'
     coordenadas = 'ddmm.mmmmm' # d: degrees, m: minutes (se debe convertir a grados decimales)
     """
+    ts = time2secs_tz(msg_list[1])
+    print(ts)
 
-    return {
+    result = {
         "id_nodo": int(msg_list[0]),
-        "timestamp": time2secs_tz(msg_list[1]),
+        "timestamp": ts,
         "lat": coord_decimales(msg_list[2]),
         "lon": coord_decimales(msg_list[3]),
         "data": {
@@ -31,6 +33,8 @@ def _parse_v2(msg_list):
             "gas": int(msg_list[6])
         }
     }
+    print(result)
+    return result
 
 
 def _parse_v1(msg_list):
