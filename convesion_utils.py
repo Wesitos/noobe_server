@@ -34,8 +34,8 @@ def time2secs_tz(strtime):
 #time2secs_tz("20151114113954")
 
 
-def coord_decimales(strtime):
-    l = float(strlat)
+def coord_decimales(strcoords):
+    l = float(strcoords)
     grados = (int)(l/100)
     minutos = (l - grados * 100)/60
     return -(grados + minutos)
