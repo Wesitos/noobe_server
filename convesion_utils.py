@@ -29,6 +29,7 @@ def time2secs_tz(strtime):
     d = time2secs(fecha_lima, d70)
     print(d)
     print(datetime.datetime.fromtimestamp(d))
+    return d
 
 
 #time2secs_tz("20151114113954")
