@@ -12,9 +12,9 @@ d70 = datetime.datetime(1970, 1, 1, 0, 0, 0).replace(tzinfo=tz_utc)
 def hora_lima(strtime):
     fechautc = dateutil.parser.parse(strtime)
     fechautc = fechautc.replace(tzinfo=tz_utc)
-    print(fechautc.strftime("%Y-%m-%d %H:%M:%S %Z%z"))
+    #print(fechautc.strftime("%Y-%m-%d %H:%M:%S %Z%z"))
     fecha_lima = fechautc.astimezone(tz_lima)
-    print(fecha_lima.strftime("%Y-%m-%d %H:%M:%S %Z%z"))
+    #print(fecha_lima.strftime("%Y-%m-%d %H:%M:%S %Z%z"))
     return fecha_lima
 
 
@@ -27,8 +27,8 @@ def time2secs(fechahora, fechahoraref):
 def time2secs_tz(strtime):
     fecha_lima = hora_lima(strtime)
     d = time2secs(fecha_lima, d70)
-    print(d)
-    print(datetime.datetime.fromtimestamp(d))
+    #print(d)
+    #print(datetime.datetime.fromtimestamp(d))
     return d
 
 
