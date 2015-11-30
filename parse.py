@@ -15,25 +15,37 @@ def parse_message(message):
 
 def _parse_v2(msg_list):
     """Parsea un mensaje version 2
-    >>> d = _parse_v1(['1','20151114113954','1206.578273','7701.822705','79.30','22.20','999'])
-    fechahora =            'yyyyMMddHHmmss'
-    coordenadas = 'ddmm.mmmmm' # d: degrees, m: minutes (se debe convertir a grados decimales)
+
+    >>> d = _parse_v2(['1', '20151130123442', '1204.892012', '7702.233496', '56.20', '26.90', '307'])
+    >>> d == {
+    ...       'id_nodo': 1,
+    ...       'version': 2,
+    ...       'lon': -77.03722493333333,
+    ...       'timestamp': 1448886882,
+    ...       'lat': -12.081533533333333,
+    ...       'data': {
+    ...                'hum': 56.2,
+    ...                'temp': 26.9,
+    ...                'gas': 307
+    ...       }
+    ... }
+    True
     """
     ts = time2secs_tz(msg_list[1])
-    print(ts)
-
+    # fechahora = 'yyyyMMddHHmmss'
+    # coordenadas = 'ddmm.mmmmm' # d: degrees, m: minutes (se debe convertir a grados decimales)
     result = {
         "id_nodo": int(msg_list[0]),
+        "version": 2,
         "timestamp": ts,
         "lat": coord_decimales(msg_list[2]),
         "lon": coord_decimales(msg_list[3]),
         "data": {
-            "temp": float(msg_list[4]),
-            "hum": float(msg_list[5]),
+            "temp": float(msg_list[5]),
+            "hum": float(msg_list[4]),
             "gas": int(msg_list[6])
         }
     }
-    print(result)
     return result
 
 
@@ -43,6 +55,7 @@ def _parse_v1(msg_list):
     >>> d = _parse_v1(['1', '1447204817', '-1201835', '-7704910', '223', '78', '148'])
     >>> d == {
     ...       "id_nodo": 1,
+    ...       "version": 1,
     ...       "timestamp": 1447204817,
     ...       "lat": -12.01835,
     ...       "lon": -77.04910,
@@ -56,6 +69,7 @@ def _parse_v1(msg_list):
     """
     return {
         "id_nodo": int(msg_list[0]),
+        "version": 1,
         "timestamp": int(msg_list[1]),
         "lat": int(msg_list[2])/1E5,
         "lon": int(msg_list[3])/1E5,
